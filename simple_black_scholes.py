@@ -1,6 +1,12 @@
-import scipy.stats as spi
 import numpy as np
+import matplotlib.pyplot as plt
+from scipy.stats import norm
+import seaborn as sns
+import streamlit as st
 
+# =======================================
+
+# Black scholes equation to calculate prices
 class BlackScholes():
     def __init__(self, spot_price, strike_price, time_to_maturity, interest_rate, volatility):
         self.spot_price = spot_price
@@ -8,36 +14,80 @@ class BlackScholes():
         self.time_to_maturity = time_to_maturity
         self.interest_rate = interest_rate
         self.volatility = volatility
-    
+
     def calculate_price(self):
 
-        spot_price = self.spot_price
-        strike_price = self.strike_price
-        time_to_maturity = self.time_to_maturity
-        interest_rate = self.interest_rate
-        volatility = self.volatility
+        S = self.spot_price
+        K = self.strike_price
+        T = self.time_to_maturity
+        r = self.interest_rate
 
-        d1 = (
-            np.log(spot_price / strike_price)
-              + (interest_rate + volatility ** 2 / 2) * time_to_maturity
-        ) / (
-                volatility * np.sqrt(time_to_maturity)
-        )
+        d1, d2 = self.get_d1d2()
 
-        d2 = d1 - volatility * np.sqrt(time_to_maturity)
+        call_price = norm.cdf(d1) * S - norm.cdf(d2) * K * np.exp(- r * T)
 
-        call_price = (
-            spi.norm.cdf(d1) * spot_price
-            - spi.norm.cdf(d2) * strike_price * np.exp(- interest_rate * time_to_maturity)
-        )
-
-        put_price = (
-            strike_price * np.exp(- interest_rate * time_to_maturity) * spi.norm.cdf(-d2)
-            - spot_price * spi.norm.cdf(-d1)
-        )
+        put_price = K * np.exp(- r * T) * norm.cdf(-d2) - S * norm.cdf(-d1)
 
         return call_price, put_price
     
+
+    def get_d1d2(self):
+        S = self.spot_price
+        K = self.strike_price
+        T = self.time_to_maturity
+        r = self.interest_rate
+        sigma = self.volatility
+
+        d1 = (np.log(S / K) + (r + 0.5 * sigma**2) * T) / (sigma * np.sqrt(T))
+        d2 = d1 - sigma * np.sqrt(T)
+
+        return d1, d2
+
+    def greeks(self):
+        d1, d2 = self.get_d1d2()
+
+        S = self.spot_price
+        K = self.strike_price
+        T = self.time_to_maturity
+        r = self.interest_rate
+        sigma = self.volatility
+
+        call_delta = norm.cdf(d1) 
+        put_delta = -norm.cdf(-d1)
+
+        gamma = norm.pdf(d1) / (S * sigma * np.sqrt(T))
+    
+        vega_raw = S * norm.pdf(d1) * np.sqrt(T)
+        vega_1pct = vega_raw / 100.0
+
+        call_theta_yr = - (S * norm.pdf(d1) * sigma) / (2 * np.sqrt(T)) - r * K * np.exp(-r * T) * norm.cdf(d2)
+        put_theta_yr = - (S * norm.pdf(d1) * sigma) / (2 * np.sqrt(T)) + r * K * np.exp(-r * T) * norm.cdf(-d2)
+        call_theta_day = call_theta_yr / 365.0
+        put_theta_day = put_theta_yr / 365.0
+
+        call_rho = K * T * np.exp(-r * T) * norm.cdf(d2)
+        put_rho = -K * T * np.exp(-r * T) * norm.cdf(-d2)
+        call_rho_1pct = call_rho / 100.0
+        put_rho_1pct = put_rho / 100.0
+
+        return {
+            "call_delta": call_delta,
+            "put_delta": put_delta,
+            "gamma": gamma,
+            "vega": vega_raw,
+            "vega_1pct": vega_1pct,
+            "call_theta_yr": call_theta_yr,
+            "put_theta_yr": put_theta_yr,
+            "call_theta_day": call_theta_day,
+            "put_theta_day": put_theta_day,
+            "call_rho": call_rho,
+            "put_rho": put_rho,
+            "call_rho_1pct": call_rho_1pct,
+            "put_rho_1pct": put_rho_1pct
+        }
+
+
+
 
 def main():
     spot_price = float(input("What is the spot price?: "))
