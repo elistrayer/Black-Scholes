@@ -251,7 +251,20 @@ def main():
         st.metric("Volatility:", f"{volatility * 100:.2f}%")
 
 
+
     col1, col2 = st.columns(2)
+   
+    st.markdown(
+    f"""
+    <style>
+    [data-testid="stMetricValue"] > div {{
+        font-size: {greek_size}px;
+    }}
+    </style>
+    """,
+    unsafe_allow_html=True,
+    ) 
+
     with col1: 
         styled_box(f"Call Value: ${real_call:.2f}", "#2ECC71")
         st.text("")
@@ -278,16 +291,6 @@ def main():
             st.markdown(f"Vega shown per +1% of σ.")
             st.markdown(f"Rho shown per +1% rate.")
 
-    st.markdown(
-    f"""
-    <style>
-    [data-testid="stMetricValue"] > div {{
-        font-size: {greek_size}px;
-    }}
-    </style>
-    """,
-    unsafe_allow_html=True,
-    ) 
 
     with col2: 
         styled_box(f"Put Value: ${real_put:.2f}", "#E74C3C")
@@ -309,8 +312,8 @@ def main():
             st.metric("Vega (1%):", f"{greeks['vega_1pct']:.3f}")
         with sub_col5: 
             st.metric("Rho (1%):", f"{greeks['put_rho_1pct']:.3f}")
+ 
 
-    
 
-
-main()
+if __name__ == "__main__":
+    main()
